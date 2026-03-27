@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
-import toast from 'react-hot-toast'
-import { getSettingsApiErrorMessage, settingsService, type WhatsAppSettings, type WhatsAppStatus } from '../../services/settings.service'
+import { type WhatsAppSettings, type WhatsAppStatus } from '../../services/settings.service'
+import { useSettingsController } from '../../controllers/settings.controller'
 
 export const WAAPISettings = () => {
+  const settingsController = useSettingsController()
   const [showToken, setShowToken] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -32,28 +33,13 @@ export const WAAPISettings = () => {
 
   const loadSettings = async () => {
     setIsLoading(true)
-    try {
-      const settings = await settingsService.getWhatsAppSettings()
-      setForm(settings)
-      setInitialForm(settings)
-      try {
-        const connectionStatus = await settingsService.getWhatsAppStatus()
-        setStatus(connectionStatus)
-      } catch {
-        setStatus({
-          connected: false,
-          qualityRating: settings.qualityRating || null,
-          messagingLimit: settings.messagingLimit || null,
-          displayPhoneNumber: null,
-          verifiedName: null,
-          statusMessage: "Unable to fetch live status right now"
-        })
-      }
-    } catch (error: unknown) {
-      toast.error(getSettingsApiErrorMessage(error, 'Failed to load WhatsApp settings'))
-    } finally {
-      setIsLoading(false)
+    const result = await settingsController.loadWhatsAppSettings()
+    if (result.ok) {
+      setForm(result.data.settings)
+      setInitialForm(result.data.settings)
+      setStatus(result.data.status)
     }
+    setIsLoading(false)
   }
 
   useEffect(() => {
@@ -62,40 +48,27 @@ export const WAAPISettings = () => {
 
   const handleSave = async () => {
     setIsSaving(true)
-    try {
-      const updated = await settingsService.updateWhatsAppSettings({
-        phoneNumberId: form.phoneNumberId,
-        wabaId: form.wabaId,
-        accessToken: form.accessToken,
-      })
-      setForm(updated)
-      setInitialForm(updated)
+    const result = await settingsController.saveWhatsAppSettings({
+      phoneNumberId: form.phoneNumberId,
+      wabaId: form.wabaId,
+      accessToken: form.accessToken,
+    })
+    if (result.ok) {
+      setForm(result.data.settings)
+      setInitialForm(result.data.settings)
+      setStatus(result.data.status)
       setIsEditing(false)
-      toast.success(updated.message || 'Settings updated')
-      try {
-        const updatedStatus = await settingsService.getWhatsAppStatus()
-        setStatus(updatedStatus)
-      } catch {
-        setStatus(prev => prev ? { ...prev, statusMessage: "Saved. Live status check failed." } : prev)
-      }
-    } catch (error: unknown) {
-      toast.error(getSettingsApiErrorMessage(error, 'Failed to update settings'))
-    } finally {
-      setIsSaving(false)
     }
+    setIsSaving(false)
   }
 
   const handleCheckStatus = async () => {
     setIsCheckingStatus(true)
-    try {
-      const connectionStatus = await settingsService.getWhatsAppStatus()
-      setStatus(connectionStatus)
-      toast.success(connectionStatus.message || connectionStatus.statusMessage || 'Status refreshed')
-    } catch (error: unknown) {
-      toast.error(getSettingsApiErrorMessage(error, 'Failed to check connection status'))
-    } finally {
-      setIsCheckingStatus(false)
+    const result = await settingsController.refreshWhatsAppStatus()
+    if (result.ok) {
+      setStatus(result.data)
     }
+    setIsCheckingStatus(false)
   }
 
   const connected = status?.connected ?? false

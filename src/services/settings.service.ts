@@ -31,6 +31,14 @@ export type WhatsAppStatus = {
   statusMessage: string
 }
 
+export type BusinessProfile = {
+  businessName: string
+  displayPhone: string
+  category: string
+  timezone: string
+  optOutKeyword: string
+}
+
 const unwrap = <T>(response: ApiSuccessResponse<T>) => ({
   ...response.data,
   message: response.message
@@ -50,4 +58,10 @@ export const settingsService = {
 
   getWhatsAppStatus: () =>
     api.get<ApiSuccessResponse<WhatsAppStatus>>('/settings/whatsapp/status').then(r => unwrap(r.data)),
+
+  getBusinessProfile: () =>
+    api.get<ApiSuccessResponse<BusinessProfile>>('/settings/profile').then(r => unwrap(r.data)),
+
+  updateBusinessProfile: (payload: { category: string; timezone: string; optOutKeyword: string }) =>
+    api.put<ApiSuccessResponse<BusinessProfile>>('/settings/profile', payload).then(r => unwrap(r.data)),
 }
