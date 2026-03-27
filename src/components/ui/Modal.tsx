@@ -9,9 +9,21 @@ interface ModalProps {
   children: React.ReactNode
   footer?: React.ReactNode
   width?: string
+  fullWidthOnMobile?: boolean
+  centerOnMobile?: boolean
 }
 
-export const Modal = ({ open, onClose, title, subtitle, children, footer, width = 'w-[520px]' }: ModalProps) => {
+export const Modal = ({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  width = 'w-[520px]',
+  fullWidthOnMobile = true,
+  centerOnMobile = false,
+}: ModalProps) => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     if (open) window.addEventListener('keydown', handler)
@@ -22,15 +34,15 @@ export const Modal = ({ open, onClose, title, subtitle, children, footer, width 
 
   return (
     <div
-      className="fixed inset-0 bg-black/45 z-[200] flex items-end sm:items-center justify-center backdrop-blur-[4px]"
+      className={`fixed inset-0 bg-black/45 z-200 flex ${centerOnMobile ? 'items-center' : 'items-end sm:items-center'} justify-center backdrop-blur-xs`}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className={`bg-white border border-gray-200 rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 ${width} w-full sm:max-w-[95vw] max-h-[90vh]
+        className={`bg-white border border-gray-200 rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 ${width} ${fullWidthOnMobile ? 'w-full sm:max-w-[95vw]' : 'w-[92vw] sm:max-w-[95vw]'} max-h-[90vh]
           overflow-y-auto relative shadow-[0_8px_24px_rgba(0,0,0,0.10)]`}
         style={{ animation: 'modalIn 0.2s ease' }}
       >
-        <div className="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+        {!centerOnMobile && <div className="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />}
         <button
           onClick={onClose}
           className="absolute top-5 right-5 w-7 h-7 bg-gray-50 border border-gray-200 rounded-md

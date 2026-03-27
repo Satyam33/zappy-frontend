@@ -1,13 +1,12 @@
 import { Formik, Form, Field, ErrorMessage } from 'formik'
-import { Modal } from '../../components/ui/Modal'
-import { Button } from '../../components/ui/Button'
-import { addContactSchema } from '../../utils/validators'
-import toast from 'react-hot-toast'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { addContactSchema } from '@/utils/validators'
 
 interface Props {
   open: boolean
   onClose: () => void
-  onAdd: (contact: { name: string; phone: string; tags: string[] }) => void
+  onAdd: (contact: { name: string; phone: string; tags: string[] }) => Promise<boolean>
 }
 
 const TAG_OPTIONS = ['VIP', 'New Customer', 'Repeat', 'Inactive']
@@ -22,14 +21,13 @@ export const AddContactModal = ({ open, onClose, onAdd }: Props) => (
     <Formik
       initialValues={{ name: '', phone: '', tags: [] as string[] }}
       validationSchema={addContactSchema}
-      onSubmit={(values, { setSubmitting, resetForm }) => {
-        setTimeout(() => {
-          onAdd(values)
-          toast.success('Contact added successfully')
+      onSubmit={async (values, { setSubmitting, resetForm }) => {
+        const created = await onAdd(values)
+        if (created) {
           resetForm()
-          setSubmitting(false)
           onClose()
-        }, 600)
+        }
+        setSubmitting(false)
       }}
     >
       {({ isSubmitting, values, setFieldValue }) => (
