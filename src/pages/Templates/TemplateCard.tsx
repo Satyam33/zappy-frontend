@@ -1,13 +1,13 @@
-import { Copy, AlertCircle } from 'lucide-react'
-import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
-import type { Template } from '../../types/template.types'
-import toast from 'react-hot-toast'
+import { Eye, AlertCircle } from 'lucide-react'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import type { Template } from '@/types/template.types'
 
 const statusConfig = {
+  draft:    { v: 'gray' as const, label: 'Draft' },
   approved: { v: 'green' as const, label: 'Approved' },
   pending:  { v: 'amber' as const, label: 'Pending' },
-  rejected: { v: 'red'   as const, label: 'Rejected' },
+  action_required: { v: 'red' as const, label: 'Action Required' },
 }
 
 const categoryLabels: Record<string, string> = {
@@ -18,12 +18,12 @@ const categoryLabels: Record<string, string> = {
 
 interface Props {
   template: Template
-  onDuplicate: (t: Template) => void
-  onResubmit: (id: string) => void
+  onPreview: (t: Template) => void
 }
 
-export const TemplateCard = ({ template, onDuplicate, onResubmit }: Props) => {
+export const TemplateCard = ({ template, onPreview }: Props) => {
   const sc = statusConfig[template.status]
+  const rejectionReason = template.rejectionReason || (template as { rejection_reason?: string }).rejection_reason
 
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-[18px_20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col transition-all hover:border-gray-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
@@ -35,6 +35,7 @@ export const TemplateCard = ({ template, onDuplicate, onResubmit }: Props) => {
           <div className="flex items-center gap-2 mt-1.5">
             <Badge variant="gray">{categoryLabels[template.category]}</Badge>
             <Badge variant="gray">{template.language.toUpperCase()}</Badge>
+            <Badge variant="gray">{template.template_type}</Badge>
           </div>
         </div>
         <Badge variant={sc.v} className="ml-2 flex-shrink-0">{sc.label}</Badge>
@@ -44,25 +45,17 @@ export const TemplateCard = ({ template, onDuplicate, onResubmit }: Props) => {
         {template.body}
       </p>
 
-      {template.status === 'rejected' && template.rejectionReason && (
+      {template.status === 'action_required' && rejectionReason && (
         <div className="mt-3 bg-red-50 border border-red-100 rounded-lg p-2.5 flex gap-2">
           <AlertCircle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
-          <p className="text-[11.5px] text-red-600 leading-relaxed">{template.rejectionReason}</p>
+          <p className="text-[11.5px] text-red-600 leading-relaxed">{rejectionReason}</p>
         </div>
       )}
 
       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
-        <Button variant="ghost" size="xs" icon={<Copy size={11} />} onClick={() => {
-          onDuplicate(template)
-          toast.success('Template duplicated')
-        }}>
-          Duplicate
+        <Button variant="ghost" size="xs" icon={<Eye size={12} />} onClick={() => onPreview(template)}>
+          Preview
         </Button>
-        {template.status === 'rejected' && (
-          <Button size="xs" onClick={() => onResubmit(template.id)}>
-            Edit & Resubmit
-          </Button>
-        )}
       </div>
     </div>
   )
