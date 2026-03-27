@@ -11,7 +11,11 @@ const api = axios.create({
 
 api.interceptors.request.use(config => {
   const token = store.getState().auth.accessToken
+  const orgId = store.getState().auth.org?.id
+  const requestUrl = String(config.url || '')
+  const isAuthEndpoint = requestUrl.includes('/auth/')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  if (orgId && !isAuthEndpoint) config.headers['x-org-id'] = orgId
   return config
 })
 

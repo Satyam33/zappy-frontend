@@ -1,17 +1,104 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import toast from 'react-hot-toast'
+import { getSettingsApiErrorMessage, settingsService, type WhatsAppSettings, type WhatsAppStatus } from '../../services/settings.service'
 
 export const WAAPISettings = () => {
   const [showToken, setShowToken] = useState(false)
-  const [connected, setConnected] = useState(true)
-  const [form, setForm] = useState({
-    phoneNumberId: '123456789012345',
-    wabaId:        '987654321098765',
-    accessToken:   'EAABsbCS1iH0BAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false)
+  const [status, setStatus] = useState<WhatsAppStatus | null>(null)
+  const [form, setForm] = useState<WhatsAppSettings>({
+    phoneNumberId: '',
+    wabaId: '',
+    accessToken: '',
+    qualityRating: 'UNKNOWN',
+    messagingLimit: 'UNKNOWN',
   })
+  const [initialForm, setInitialForm] = useState<WhatsAppSettings | null>(null)
+
+  const isDirty = useMemo(() => {
+    if (!initialForm) return false
+    return (
+      form.phoneNumberId !== initialForm.phoneNumberId ||
+      form.wabaId !== initialForm.wabaId ||
+      form.accessToken !== initialForm.accessToken
+    )
+  }, [form, initialForm])
+
+  const loadSettings = async () => {
+    setIsLoading(true)
+    try {
+      const settings = await settingsService.getWhatsAppSettings()
+      setForm(settings)
+      setInitialForm(settings)
+      try {
+        const connectionStatus = await settingsService.getWhatsAppStatus()
+        setStatus(connectionStatus)
+      } catch {
+        setStatus({
+          connected: false,
+          qualityRating: settings.qualityRating || null,
+          messagingLimit: settings.messagingLimit || null,
+          displayPhoneNumber: null,
+          verifiedName: null,
+          statusMessage: "Unable to fetch live status right now"
+        })
+      }
+    } catch (error: unknown) {
+      toast.error(getSettingsApiErrorMessage(error, 'Failed to load WhatsApp settings'))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadSettings()
+  }, [])
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const updated = await settingsService.updateWhatsAppSettings({
+        phoneNumberId: form.phoneNumberId,
+        wabaId: form.wabaId,
+        accessToken: form.accessToken,
+      })
+      setForm(updated)
+      setInitialForm(updated)
+      setIsEditing(false)
+      toast.success(updated.message || 'Settings updated')
+      try {
+        const updatedStatus = await settingsService.getWhatsAppStatus()
+        setStatus(updatedStatus)
+      } catch {
+        setStatus(prev => prev ? { ...prev, statusMessage: "Saved. Live status check failed." } : prev)
+      }
+    } catch (error: unknown) {
+      toast.error(getSettingsApiErrorMessage(error, 'Failed to update settings'))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCheckStatus = async () => {
+    setIsCheckingStatus(true)
+    try {
+      const connectionStatus = await settingsService.getWhatsAppStatus()
+      setStatus(connectionStatus)
+      toast.success(connectionStatus.message || connectionStatus.statusMessage || 'Status refreshed')
+    } catch (error: unknown) {
+      toast.error(getSettingsApiErrorMessage(error, 'Failed to check connection status'))
+    } finally {
+      setIsCheckingStatus(false)
+    }
+  }
+
+  const connected = status?.connected ?? false
 
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-[18px_20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)] space-y-5">
@@ -24,13 +111,21 @@ export const WAAPISettings = () => {
         </Badge>
       </div>
 
+      {isLoading ? (
+        <p className="text-[13px] text-gray-500">Loading settings...</p>
+      ) : (
       <div className="space-y-4">
         <div>
           <label className="block text-[12.5px] font-medium text-gray-500 mb-1.5">Phone Number ID</label>
           <input
             value={form.phoneNumberId}
             onChange={e => setForm(p => ({ ...p, phoneNumberId: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13.5px] text-gray-900 font-mono outline-none focus:border-green-500 focus:bg-white transition-colors"
+            readOnly={!isEditing}
+            className={`w-full border rounded-lg px-3 py-2.5 text-[13.5px] text-gray-900 font-mono outline-none transition-colors ${
+              isEditing
+                ? 'bg-gray-50 border-gray-200 focus:border-green-500 focus:bg-white'
+                : 'bg-gray-50 border-gray-200 opacity-70 cursor-default'
+            }`}
           />
         </div>
 
@@ -39,7 +134,12 @@ export const WAAPISettings = () => {
           <input
             value={form.wabaId}
             onChange={e => setForm(p => ({ ...p, wabaId: e.target.value }))}
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13.5px] text-gray-900 font-mono outline-none focus:border-green-500 focus:bg-white transition-colors"
+            readOnly={!isEditing}
+            className={`w-full border rounded-lg px-3 py-2.5 text-[13.5px] text-gray-900 font-mono outline-none transition-colors ${
+              isEditing
+                ? 'bg-gray-50 border-gray-200 focus:border-green-500 focus:bg-white'
+                : 'bg-gray-50 border-gray-200 opacity-70 cursor-default'
+            }`}
           />
         </div>
 
@@ -50,7 +150,12 @@ export const WAAPISettings = () => {
               type={showToken ? 'text' : 'password'}
               value={form.accessToken}
               onChange={e => setForm(p => ({ ...p, accessToken: e.target.value }))}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-[13.5px] text-gray-900 font-mono outline-none focus:border-green-500 focus:bg-white transition-colors"
+              readOnly={!isEditing}
+              className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-[13.5px] text-gray-900 font-mono outline-none transition-colors ${
+                isEditing
+                  ? 'bg-gray-50 border-gray-200 focus:border-green-500 focus:bg-white'
+                  : 'bg-gray-50 border-gray-200 opacity-70 cursor-default'
+              }`}
             />
             <button
               type="button"
@@ -61,15 +166,46 @@ export const WAAPISettings = () => {
             </button>
           </div>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+            <p className="text-[11.5px] text-gray-500 mb-0.5">Quality Rating</p>
+            <p className="text-[13px] font-medium text-gray-900">{status?.qualityRating || form.qualityRating || 'UNKNOWN'}</p>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+            <p className="text-[11.5px] text-gray-500 mb-0.5">Messaging Limit</p>
+            <p className="text-[13px] font-medium text-gray-900">{status?.messagingLimit || form.messagingLimit || 'UNKNOWN'}</p>
+          </div>
+        </div>
+        {status?.statusMessage && (
+          <p className="text-[12px] text-gray-500">{status.statusMessage}</p>
+        )}
       </div>
+      )}
 
       <div className="flex items-center gap-2.5 pt-2 border-t border-gray-100">
-        <Button onClick={() => toast.success('Settings saved')}>Save Changes</Button>
-        <Button
-          variant={connected ? 'danger' : 'ghost'}
-          onClick={() => { setConnected(v => !v); toast.success(connected ? 'Disconnected' : 'Connected') }}
-        >
-          {connected ? 'Disconnect' : 'Connect'}
+        {!isEditing ? (
+          <Button onClick={() => setIsEditing(true)} disabled={isLoading}>
+            Edit
+          </Button>
+        ) : (
+          <>
+            <Button onClick={handleSave} loading={isSaving} disabled={!isDirty}>
+              Save Changes
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (initialForm) setForm(initialForm)
+                setIsEditing(false)
+              }}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+          </>
+        )}
+        <Button variant={connected ? 'accent' : 'ghost'} onClick={handleCheckStatus} loading={isCheckingStatus} disabled={isLoading}>
+          Check Status
         </Button>
       </div>
     </div>
