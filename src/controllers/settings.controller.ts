@@ -4,6 +4,7 @@ import {
   getSettingsApiErrorMessage,
   settingsService,
   type BusinessProfile,
+  type WebhookSettings,
   type WhatsAppSettings,
   type WhatsAppStatus,
 } from '../services/settings.service'
@@ -99,11 +100,36 @@ export const useSettingsController = () => {
     }
   }, [])
 
+  const loadWebhookSettings = useCallback(async (): Promise<Result<WebhookSettings>> => {
+    try {
+      const data = await settingsService.getWebhookSettings()
+      return { ok: true, data }
+    } catch (error: unknown) {
+      toast.error(getSettingsApiErrorMessage(error, 'Failed to load webhook settings'))
+      return { ok: false }
+    }
+  }, [])
+
+  const saveWebhookSettings = useCallback(async (
+    payload: { events: WebhookSettings['events'] }
+  ): Promise<Result<WebhookSettings>> => {
+    try {
+      const data = await settingsService.updateWebhookSettings(payload)
+      toast.success(data.message || 'Webhook settings updated')
+      return { ok: true, data }
+    } catch (error: unknown) {
+      toast.error(getSettingsApiErrorMessage(error, 'Failed to update webhook settings'))
+      return { ok: false }
+    }
+  }, [])
+
   return {
     loadWhatsAppSettings,
     saveWhatsAppSettings,
     refreshWhatsAppStatus,
     loadBusinessProfile,
     saveBusinessProfile,
+    loadWebhookSettings,
+    saveWebhookSettings,
   }
 }

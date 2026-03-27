@@ -39,6 +39,18 @@ export type BusinessProfile = {
   optOutKeyword: string
 }
 
+export type WebhookEvents = {
+  messages: boolean
+  message_status: boolean
+  template_status: boolean
+}
+
+export type WebhookSettings = {
+  webhookUrl: string
+  verifyToken: string
+  events: WebhookEvents
+}
+
 const unwrap = <T>(response: ApiSuccessResponse<T>) => ({
   ...response.data,
   message: response.message
@@ -64,4 +76,10 @@ export const settingsService = {
 
   updateBusinessProfile: (payload: { category: string; timezone: string; optOutKeyword: string }) =>
     api.put<ApiSuccessResponse<BusinessProfile>>('/settings/profile', payload).then(r => unwrap(r.data)),
+
+  getWebhookSettings: () =>
+    api.get<ApiSuccessResponse<WebhookSettings>>('/settings/webhook').then(r => unwrap(r.data)),
+
+  updateWebhookSettings: (payload: { events: WebhookEvents }) =>
+    api.put<ApiSuccessResponse<WebhookSettings>>('/settings/webhook', payload).then(r => unwrap(r.data)),
 }
