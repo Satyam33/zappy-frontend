@@ -1,19 +1,22 @@
-import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { Button } from '../../components/ui/Button'
-import { EmptyState } from '../../components/shared/EmptyState'
-import { CampaignCard } from './CampaignCard'
-import { NewBroadcastModal } from './NewBroadcastModal'
-import { mockCampaigns } from '../../utils/mockData'
-import type { Campaign } from '../../types/campaign.types'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { CampaignCard } from '@/pages/Campaigns/CampaignCard'
+import { NewBroadcastModal } from '@/pages/Campaigns/NewBroadcastModal'
+import { useCampaignsPageController } from '@/controllers/campaigns.controller'
 
 export default function Campaigns() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns)
-  const [modalOpen, setModalOpen] = useState(false)
-
-  const handleAdd = (campaign: Campaign) =>
-    setCampaigns(prev => [campaign, ...prev])
-
+  const {
+    campaigns,
+    meta,
+    loading,
+    metaLoading,
+    modalOpen,
+    setModalOpen,
+    approvedTemplates,
+    previewAudience,
+    createCampaign
+  } = useCampaignsPageController()
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -38,7 +41,15 @@ export default function Campaigns() {
         </div>
       )}
 
-      <NewBroadcastModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={handleAdd} />
+      <NewBroadcastModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        creating={loading || metaLoading}
+        meta={meta}
+        templates={approvedTemplates}
+        onPreviewAudience={previewAudience}
+        onAdd={createCampaign}
+      />
     </div>
   )
 }
