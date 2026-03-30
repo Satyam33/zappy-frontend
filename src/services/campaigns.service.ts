@@ -5,15 +5,22 @@ import type { Campaign, CampaignAudience, CampaignsMeta } from '@/types/campaign
 type ApiSuccessResponse<T> = { success: true; code: number; message: string; data: T }
 type ApiErrorResponse = { success: false; code: number; message: string }
 const unwrapObject = <T extends object>(response: ApiSuccessResponse<T>) => ({ ...response.data, message: response.message })
-const unwrapArray = <T>(response: ApiSuccessResponse<T[]>) => ({ items: response.data, message: response.message })
 export const getCampaignsApiErrorMessage = (error: unknown, fallback: string): string => {
   const err = error as AxiosError<ApiErrorResponse>
   return err?.response?.data?.message || fallback
 }
 
+type ListCampaignsResponse = {
+  items: Campaign[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
 export const campaignsService = {
-  getAll: () =>
-    api.get<ApiSuccessResponse<Campaign[]>>('/campaigns').then(r => unwrapArray(r.data)),
+  getAll: (params?: { page?: number; limit?: number; search?: string }) =>
+    api.get<ApiSuccessResponse<ListCampaignsResponse>>('/campaigns', { params }).then(r => unwrapObject(r.data)),
 
   getMeta: () =>
     api.get<ApiSuccessResponse<CampaignsMeta>>('/campaigns/meta').then(r => unwrapObject(r.data)),

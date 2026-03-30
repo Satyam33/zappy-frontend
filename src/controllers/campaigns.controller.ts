@@ -5,6 +5,11 @@ import type { Campaign, CampaignAudience, CampaignsMeta, CampaignTemplateMeta } 
 
 export const useCampaignsPageController = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [meta, setMeta] = useState<CampaignsMeta | null>(null)
   const [loading, setLoading] = useState(false)
   const [metaLoading, setMetaLoading] = useState(false)
@@ -13,14 +18,20 @@ export const useCampaignsPageController = () => {
   const loadCampaigns = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await campaignsService.getAll()
+      const data = await campaignsService.getAll({
+        page,
+        limit: pageSize,
+        search: search.trim() || undefined
+      })
       setCampaigns(data.items)
+      setTotal(data.total)
+      setTotalPages(data.totalPages)
     } catch (error: unknown) {
       toast.error(getCampaignsApiErrorMessage(error, 'Failed to load campaigns'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page, pageSize, search])
 
   const loadMeta = useCallback(async () => {
     setMetaLoading(true)
@@ -62,6 +73,7 @@ export const useCampaignsPageController = () => {
     try {
       const data = await campaignsService.create(payload)
       toast.success(data.message || 'Campaign created')
+      setPage(1)
       await loadCampaigns()
       return true
     } catch (error: unknown) {
@@ -74,6 +86,11 @@ export const useCampaignsPageController = () => {
 
   return {
     campaigns,
+    search,
+    page,
+    pageSize,
+    total,
+    totalPages,
     loading,
     meta,
     metaLoading,
@@ -81,6 +98,9 @@ export const useCampaignsPageController = () => {
     setModalOpen,
     approvedTemplates,
     previewAudience,
-    createCampaign
+    createCampaign,
+    setSearch: (value: string) => { setPage(1); setSearch(value) },
+    setPage,
+    setPageSize: (value: number) => { setPage(1); setPageSize(value) }
   }
 }

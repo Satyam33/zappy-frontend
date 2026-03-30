@@ -3,10 +3,14 @@ export type CampaignStatus = 'running' | 'completed' | 'scheduled' | 'failed' | 
 export interface Campaign {
   id: string
   name: string
-  segment: string
+  segment?: string
   templateId: string
   templateName?: string
   status: CampaignStatus
+  audienceMode?: 'all' | 'tag' | 'ids'
+  audienceTag?: string | null
+  selectedAudience?: number
+  finalAudience?: number
   scheduledAt?: string
   sentAt?: string
   stats: {
