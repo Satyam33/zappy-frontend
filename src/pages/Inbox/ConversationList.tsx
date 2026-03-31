@@ -11,9 +11,12 @@ interface Props {
   onSelect: (id: string) => void
   tab: FilterTab
   onTab: (t: FilterTab) => void
+  loading?: boolean
 }
 
-export const ConversationList = ({ conversations, activeId, onSelect, tab, onTab }: Props) => (
+const displayName = (c: Conversation) => (c.contactName?.trim() ? c.contactName : c.contactPhone) || 'Unknown'
+
+export const ConversationList = ({ conversations, activeId, onSelect, tab, onTab, loading }: Props) => (
   <div className="flex flex-col bg-white border-r border-gray-100 h-full overflow-hidden">
     {/* Tabs */}
     <div className="flex gap-1.5 px-3 py-3 border-b border-gray-100 flex-wrap">
@@ -24,7 +27,11 @@ export const ConversationList = ({ conversations, activeId, onSelect, tab, onTab
 
     {/* List */}
     <div className="flex-1 overflow-y-auto">
-      {conversations.length === 0 ? (
+      {loading && conversations.length === 0 ? (
+        <div className="flex items-center justify-center h-32">
+          <p className="text-[13px] text-gray-400">Loading inbox…</p>
+        </div>
+      ) : conversations.length === 0 ? (
         <div className="flex items-center justify-center h-32">
           <p className="text-[13px] text-gray-400">No conversations</p>
         </div>
@@ -43,11 +50,11 @@ export const ConversationList = ({ conversations, activeId, onSelect, tab, onTab
 
             <div className="flex items-start gap-2.5">
               <div className="w-9 h-9 bg-green-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                {conv.contactName[0]}
+                {(displayName(conv)[0] || '?').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
-                  <p className="text-[13px] font-semibold text-gray-900 truncate">{conv.contactName}</p>
+                  <p className="text-[13px] font-semibold text-gray-900 truncate">{displayName(conv)}</p>
                   <span className="text-[10.5px] text-gray-400 flex-shrink-0 ml-1">
                     {formatRelative(conv.lastMessageAt)}
                   </span>

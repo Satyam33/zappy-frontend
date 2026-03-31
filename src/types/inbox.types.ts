@@ -20,4 +20,7 @@ export interface Message {
   direction: 'inbound' | 'outbound'
   status: 'sent' | 'delivered' | 'read' | 'failed'
   createdAt: string
+  /** customer | agent | campaign | system */
+  source?: string
+  messageType?: string
 }

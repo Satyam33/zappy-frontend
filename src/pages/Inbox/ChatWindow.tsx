@@ -9,12 +9,15 @@ import toast from 'react-hot-toast'
 interface Props {
   conversation: Conversation
   messages: Message[]
+  messagesLoading?: boolean
   onSend: (content: string) => void
   onResolve: () => void
   onBack?: () => void
 }
 
-export const ChatWindow = ({ conversation, messages, onSend, onResolve, onBack }: Props) => {
+const headerLabel = (c: Conversation) => (c.contactName?.trim() ? c.contactName : c.contactPhone) || 'Unknown'
+
+export const ChatWindow = ({ conversation, messages, messagesLoading, onSend, onResolve, onBack }: Props) => {
   const [input, setInput] = useState('')
   const [showStopModal, setShowStopModal] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -43,10 +46,10 @@ export const ChatWindow = ({ conversation, messages, onSend, onResolve, onBack }
           </button>
         )}
         <div className="w-9 h-9 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-          {conversation.contactName[0]}
+          {(headerLabel(conversation)[0] || '?').toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-gray-900">{conversation.contactName}</p>
+          <p className="text-[14px] font-semibold text-gray-900">{headerLabel(conversation)}</p>
           <p className="text-[11.5px] text-gray-400">{conversation.contactPhone}</p>
         </div>
         {conversation.contactTag && (
@@ -70,6 +73,9 @@ export const ChatWindow = ({ conversation, messages, onSend, onResolve, onBack }
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2.5">
+        {messagesLoading && messages.length === 0 && (
+          <p className="text-[13px] text-gray-400 text-center py-8">Loading messages…</p>
+        )}
         {messages.map(msg => (
           <div key={msg.id} className={`flex flex-col ${msg.direction === 'outbound' ? 'items-end' : 'items-start'}`}>
             <div className={`max-w-[68%] px-3.5 py-2.5 text-[13.5px] leading-relaxed
