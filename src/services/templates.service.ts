@@ -20,7 +20,16 @@ type ListTemplatesResponse = {
 }
 
 export const templatesService = {
-  getAll: (params?: { page?: number; limit?: number; status?: TemplateStatus; source?: TemplateSource; search?: string }) =>
+  getAll: (params?: {
+    page?: number
+    limit?: number
+    status?: TemplateStatus
+    source?: TemplateSource
+    search?: string
+    created_from?: string
+    created_to?: string
+    sort_order?: 'asc' | 'desc'
+  }) =>
     api.get<ApiSuccessResponse<ListTemplatesResponse>>('/templates', { params }).then(r => unwrap(r.data)),
 
   create: (data: {

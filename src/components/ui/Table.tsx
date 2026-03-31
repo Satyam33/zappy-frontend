@@ -2,7 +2,7 @@ import React from 'react'
 
 interface Column<T> {
   key: string
-  header: string
+  header: React.ReactNode
   width?: string
   headerClassName?: string
   cellClassName?: string
